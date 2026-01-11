@@ -5,6 +5,10 @@ import { Connection } from 'mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './users/user.module';
+import { AuthModule } from './auth/auth.module';
+import { SwipeModule } from './swipe/swipe.module';
+import { MatchModule } from './match/match.module';
+import { MessageModule } from './message/message.module';
 
 @Module({
   imports: [
@@ -28,6 +32,10 @@ import { UserModule } from './users/user.module';
       inject: [ConfigService],
     }),
     UserModule,
+    AuthModule,
+    SwipeModule,
+    MatchModule,
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [AppService],
