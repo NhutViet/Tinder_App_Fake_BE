@@ -41,6 +41,9 @@ export class User {
   @Prop({ type: [String], default: [] })
   photos: string[];
 
+  @Prop({ type: [String], default: [] })
+  interests: string[];
+
   @Prop({
     type: {
       lat: { type: Number, required: true },

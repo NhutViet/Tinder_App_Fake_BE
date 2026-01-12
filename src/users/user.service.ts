@@ -99,4 +99,18 @@ export class UserService {
       .select('-password -email')
       .exec();
   }
+
+  /**
+   * Cập nhật sở thích của user
+   */
+  async updateInterests(userId: string, interests: string[]): Promise<User | null> {
+    return this.userModel
+      .findByIdAndUpdate(
+        userId,
+        { interests },
+        { new: true }
+      )
+      .select('-password')
+      .exec();
+  }
 }
