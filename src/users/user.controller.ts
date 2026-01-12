@@ -16,10 +16,14 @@ import { UserService } from './user.service';
 import { User } from './user.schema';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UpdateInterestsDto } from './dto/update-interests.dto';
+import { SwipeService } from '../swipe/swipe.service';
 
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly swipeService: SwipeService,
+  ) {}
 
   @Post()
   create(@Body() createUserDto: Partial<User>) {
@@ -29,6 +33,57 @@ export class UserController {
   @Get()
   findAll() {
     return this.userService.findAll();
+  }
+
+  /**
+   * Lấy danh sách user để swipe
+   * Tự động loại trừ những user đã swipe (LIKE hoặc DISLIKE)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('swipe/candidates')
+  async getUsersForSwipe(
+    @Request() req,
+    @Query('limit') limit?: string,
+  ) {
+    const userId = req.user.userId;
+    // Tự động lấy danh sách user đã swipe từ database
+    const swipedUserIds = await this.swipeService.getSwipedUsers(userId);
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+
+    return this.userService.getUsersForSwipe(userId, swipedUserIds, limitNum);
+  }
+
+  /**
+   * Lấy profile của một user để hiển thị khi swipe
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('swipe/profile/:id')
+  async getProfileForSwipe(@Param('id') id: string) {
+    return this.userService.getProfileForSwipe(id);
+  }
+
+  /**
+   * Lấy danh sách user có chung sở thích cho trang home
+   * Chỉ hiển thị những user có ít nhất một sở thích chung với current user
+   * Tự động loại trừ những user đã swipe (LIKE hoặc DISLIKE)
+   * Hỗ trợ phân trang với query param: page (mỗi page 20 items)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('home/candidates')
+  async getUsersForHome(
+    @Request() req,
+    @Query('page') page?: string,
+  ) {
+    const userId = req.user.userId;
+    // Tự động lấy danh sách user đã swipe từ database
+    const swipedUserIds = await this.swipeService.getSwipedUsers(userId);
+    const pageNum = page ? parseInt(page, 10) : 1;
+
+    return this.userService.getUsersWithCommonInterests(
+      userId,
+      swipedUserIds,
+      pageNum,
+    );
   }
 
   @Get(':id')
@@ -56,33 +111,6 @@ export class UserController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
-  }
-
-  /**
-   * Lấy danh sách user để swipe
-   * Cần truyền danh sách userIds đã swipe qua query params
-   */
-  @UseGuards(JwtAuthGuard)
-  @Get('swipe/candidates')
-  async getUsersForSwipe(
-    @Request() req,
-    @Query('swipedIds') swipedIds?: string,
-    @Query('limit') limit?: string,
-  ) {
-    const userId = req.user.userId;
-    const swipedUserIds = swipedIds ? swipedIds.split(',') : [];
-    const limitNum = limit ? parseInt(limit, 10) : 10;
-
-    return this.userService.getUsersForSwipe(userId, swipedUserIds, limitNum);
-  }
-
-  /**
-   * Lấy profile của một user để hiển thị khi swipe
-   */
-  @UseGuards(JwtAuthGuard)
-  @Get('swipe/profile/:id')
-  async getProfileForSwipe(@Param('id') id: string) {
-    return this.userService.getProfileForSwipe(id);
   }
 
   /**
